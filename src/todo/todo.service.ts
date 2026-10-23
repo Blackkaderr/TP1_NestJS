@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { CreateTodoDto } from './dto/create-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
 import { TodoEntity } from './entities/todo.entity';
+import { StatusEnum } from './status.enum';
 
 @Injectable()
 export class TodoService {
@@ -37,6 +38,21 @@ export class TodoService {
     const result = await this.repository.restore(id);
     if (!result.affected) this.notFound(id);
     return this.getTodoById(id);
+  }
+
+  async getStats(): Promise<Record<StatusEnum, number>> {
+    const rows = await this.repository.createQueryBuilder('todo')
+      .select('todo.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('todo.status')
+      .getRawMany<{ status: StatusEnum; count: string | number }>();
+    const counts = {
+      [StatusEnum.WAITING]: 0,
+      [StatusEnum.IN_PROGRESS]: 0,
+      [StatusEnum.DONE]: 0,
+    };
+    for (const row of rows) counts[row.status] = Number(row.count);
+    return counts;
   }
 
   async getTodoById(id: number): Promise<TodoEntity> {
