@@ -23,6 +23,22 @@ export class TodoService {
     return this.repository.save(todo);
   }
 
+  async deleteTodo(id: number): Promise<void> {
+    const result = await this.repository.delete(id);
+    if (!result.affected) this.notFound(id);
+  }
+
+  async softDeleteTodo(id: number): Promise<void> {
+    await this.getTodoById(id);
+    await this.repository.softDelete(id);
+  }
+
+  async restoreTodo(id: number): Promise<TodoEntity> {
+    const result = await this.repository.restore(id);
+    if (!result.affected) this.notFound(id);
+    return this.getTodoById(id);
+  }
+
   async getTodoById(id: number): Promise<TodoEntity> {
     const todo = await this.repository.findOne({ where: { id } });
     if (!todo) this.notFound(id);
