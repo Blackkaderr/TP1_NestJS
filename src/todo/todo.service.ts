@@ -1,7 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Brackets, Repository } from 'typeorm';
+import { paginate } from '../common/paginate';
 import { CreateTodoDto } from './dto/create-todo.dto';
+import { QueryTodoDto } from './dto/query-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
 import { TodoEntity } from './entities/todo.entity';
 import { StatusEnum } from './status.enum';
@@ -55,8 +57,17 @@ export class TodoService {
     return counts;
   }
 
-  getAll(): Promise<TodoEntity[]> {
-    return this.repository.find({ order: { id: 'ASC' } });
+  async getAll({ search, status, page = 1, limit = 10 }: QueryTodoDto) {
+    const query = this.repository.createQueryBuilder('todo');
+    if (search) {
+      query.andWhere(new Brackets((where) => {
+        where.where('todo.name LIKE :search', { search: `%${search}%` })
+          .orWhere('todo.description LIKE :search', { search: `%${search}%` });
+      }));
+    }
+    if (status) query.andWhere('todo.status = :status', { status });
+    query.orderBy('todo.id', 'ASC');
+    return paginate(query, page, limit);
   }
 
   async getTodoById(id: number): Promise<TodoEntity> {

@@ -1,5 +1,6 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
 import { CreateTodoDto } from './dto/create-todo.dto';
+import { QueryTodoDto } from './dto/query-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
 import { TodoService } from './todo.service';
 
@@ -13,8 +14,8 @@ export class TodoController {
   }
 
   @Get()
-  getAll() {
-    return this.service.getAll();
+  getAll(@Query() query: QueryTodoDto) {
+    return this.service.getAll(query);
   }
 
   @Get('stats')
