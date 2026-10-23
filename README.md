@@ -6,3 +6,5 @@ Copier `.env.example` vers `.env` et renseigner `DATABASE_URL`.
 npm ci
 npm run start:dev
 ```
+
+`GET /example/uuid` teste le provider UUID.
