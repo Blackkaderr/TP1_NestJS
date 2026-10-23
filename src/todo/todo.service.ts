@@ -1,0 +1,35 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { CreateTodoDto } from './dto/create-todo.dto';
+import { UpdateTodoDto } from './dto/update-todo.dto';
+import { TodoEntity } from './entities/todo.entity';
+
+@Injectable()
+export class TodoService {
+  constructor(
+    @InjectRepository(TodoEntity)
+    private readonly repository: Repository<TodoEntity>,
+  ) {}
+
+  addTodo(dto: CreateTodoDto): Promise<TodoEntity> {
+    return this.repository.save(this.repository.create(dto));
+  }
+
+  async updateTodo(id: number, dto: UpdateTodoDto): Promise<TodoEntity> {
+    await this.getTodoById(id);
+    const todo = await this.repository.preload({ id, ...dto });
+    if (!todo) this.notFound(id);
+    return this.repository.save(todo);
+  }
+
+  async getTodoById(id: number): Promise<TodoEntity> {
+    const todo = await this.repository.findOne({ where: { id } });
+    if (!todo) this.notFound(id);
+    return todo;
+  }
+
+  private notFound(id: number): never {
+    throw new NotFoundException(`Todo ${id} introuvable.`);
+  }
+}
