@@ -12,9 +12,19 @@ export class TodoController {
     return this.service.addTodo(dto);
   }
 
+  @Get()
+  getAll() {
+    return this.service.getAll();
+  }
+
   @Get('stats')
   getStats() {
     return this.service.getStats();
+  }
+
+  @Get(':id')
+  getTodoById(@Param('id', ParseIntPipe) id: number) {
+    return this.service.getTodoById(id);
   }
 
   @Patch(':id')

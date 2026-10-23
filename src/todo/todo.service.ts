@@ -55,6 +55,10 @@ export class TodoService {
     return counts;
   }
 
+  getAll(): Promise<TodoEntity[]> {
+    return this.repository.find({ order: { id: 'ASC' } });
+  }
+
   async getTodoById(id: number): Promise<TodoEntity> {
     const todo = await this.repository.findOne({ where: { id } });
     if (!todo) this.notFound(id);
