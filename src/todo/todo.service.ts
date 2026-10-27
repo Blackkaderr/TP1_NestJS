@@ -46,6 +46,7 @@ export class TodoService {
     const rows = await this.repository.createQueryBuilder('todo')
       .select('todo.status', 'status')
       .addSelect('COUNT(*)', 'count')
+      .andWhere('todo.deletedAt IS NULL')
       .groupBy('todo.status')
       .getRawMany<{ status: StatusEnum; count: string | number }>();
     const counts = {
@@ -66,6 +67,7 @@ export class TodoService {
       }));
     }
     if (status) query.andWhere('todo.status = :status', { status });
+    query.andWhere('todo.deletedAt IS NULL');
     query.orderBy('todo.id', 'ASC');
     return paginate(query, page, limit);
   }
