@@ -117,3 +117,23 @@ Les statistiques exécutent une seule requête avec `GROUP BY` :
 ```json
 {"En attente": 0, "En cours": 0, "Finalisé": 0}
 ```
+
+## Partie 2 : middleware d'authentification simulée
+
+`AuthSimulationMiddleware` (`src/common/middlewares/`) protège le contrôleur Todo de persistance (`/v2/todo`).
+Il lit le header `auth-user` qui contient un token JWT, le décode avec `jsonwebtoken`, injecte `userId`
+dans la requête et répond `401` si le token manque ou ne contient pas de `userId`.
+Il est appliqué dans `AppModule` avec `consumer.apply(AuthSimulationMiddleware).forRoutes(TodoController)`.
+
+* `SECRET` (dans `.env`) est la clé utilisée pour vérifier le token. Générer un token sur [jwt.io](https://jwt.io/)
+  avec le payload `{ "userId": 1 }` et cette clé.
+* Un todo enregistre son créateur dans `userId`.
+* `PATCH /v2/todo/:id`, `DELETE /v2/todo/:id`, `DELETE /v2/todo/:id/soft` et `PATCH /v2/todo/:id/restore`
+  ne sont autorisés qu'au créateur (`403` sinon, `404` si le todo n'existe pas).
+* Les routes `/v1/todo` (mémoire) et `/example/uuid` restent publiques.
+
+```sh
+curl -X POST http://localhost:3000/v2/todo \
+  -H "auth-user: <token jwt>" -H 'Content-Type: application/json' \
+  -d '{"name":"Courses","description":"Acheter du pain frais"}'
+```

@@ -15,4 +15,7 @@ export class TodoEntity extends TimestampEntity {
 
   @Column({ type: 'enum', enum: StatusEnum, default: StatusEnum.WAITING })
   status: StatusEnum;
+
+  @Column({ type: 'int', nullable: true })
+  userId: number | null;
 }

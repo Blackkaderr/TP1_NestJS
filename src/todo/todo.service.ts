@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, Repository } from 'typeorm';
 import { paginate } from '../common/paginate';
@@ -15,30 +15,30 @@ export class TodoService {
     private readonly repository: Repository<TodoEntity>,
   ) {}
 
-  addTodo(dto: CreateTodoDto): Promise<TodoEntity> {
-    return this.repository.save(this.repository.create(dto));
+  addTodo(dto: CreateTodoDto, userId: number): Promise<TodoEntity> {
+    return this.repository.save(this.repository.create({ ...dto, userId }));
   }
 
-  async updateTodo(id: number, dto: UpdateTodoDto): Promise<TodoEntity> {
-    await this.getTodoById(id);
+  async updateTodo(id: number, dto: UpdateTodoDto, userId: number): Promise<TodoEntity> {
+    await this.getOwnedTodo(id, userId);
     const todo = await this.repository.preload({ id, ...dto });
     if (!todo) this.notFound(id);
     return this.repository.save(todo);
   }
 
-  async deleteTodo(id: number): Promise<void> {
-    const result = await this.repository.delete(id);
-    if (!result.affected) this.notFound(id);
+  async deleteTodo(id: number, userId: number): Promise<void> {
+    await this.getOwnedTodo(id, userId, true);
+    await this.repository.delete(id);
   }
 
-  async softDeleteTodo(id: number): Promise<void> {
-    await this.getTodoById(id);
+  async softDeleteTodo(id: number, userId: number): Promise<void> {
+    await this.getOwnedTodo(id, userId);
     await this.repository.softDelete(id);
   }
 
-  async restoreTodo(id: number): Promise<TodoEntity> {
-    const result = await this.repository.restore(id);
-    if (!result.affected) this.notFound(id);
+  async restoreTodo(id: number, userId: number): Promise<TodoEntity> {
+    await this.getOwnedTodo(id, userId, true);
+    await this.repository.restore(id);
     return this.getTodoById(id);
   }
 
@@ -75,6 +75,15 @@ export class TodoService {
   async getTodoById(id: number): Promise<TodoEntity> {
     const todo = await this.repository.findOne({ where: { id } });
     if (!todo) this.notFound(id);
+    return todo;
+  }
+
+  private async getOwnedTodo(id: number, userId: number, withDeleted = false): Promise<TodoEntity> {
+    const todo = await this.repository.findOne({ where: { id }, withDeleted });
+    if (!todo) this.notFound(id);
+    if (todo.userId !== userId) {
+      throw new ForbiddenException(`Le todo ${id} appartient à un autre utilisateur.`);
+    }
     return todo;
   }
 
